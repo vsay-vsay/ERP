@@ -1,14 +1,27 @@
 const User = require("../models/User");
 
-// Get all users
+// Get users by domain name (POST request)
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password"); // Exclude passwords
+    const { domain } = req.body; // Extract domain from request body
+
+    if (!domain) {
+      return res.status(400).json({ error: "Domain is required" });
+    }
+
+    const users = await User.find({ domainName: domain }).select("-password"); // Exclude passwords
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found for this domain" });
+    }
+
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: "Server Error" });
   }
 };
+
+
 
 // Get a single user by ID
 exports.getUserById = async (req, res) => {

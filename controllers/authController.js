@@ -19,7 +19,7 @@ exports.register = async (req, res) => {
       if (!domainName) {
         return res.status(400).json({ error: "Domain name is required" });
       }
-      const domain = await Domain.findOne({ name: domainName });
+      const domain = await Domain.findOne({ domainName: domainName });
       if (!domain) return res.status(404).json({ error: "Domain not found" });
   
       // Check role limits
@@ -90,10 +90,10 @@ exports.login = async (req, res) => {
       const token = jwt.sign(
         { id: user._id, role: user.role, domainName: user.domainName },
         process.env.JWT_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "365d" }
       );
 
-      res.json({ token, role: user.role.toLowerCase(), domainName: user.domainName });
+      res.json({ token, role: user.role, domainName: user.domainName, email: user.email, name: user.name});
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

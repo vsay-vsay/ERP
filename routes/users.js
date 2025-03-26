@@ -5,7 +5,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 const router = express.Router();
 
 // Get all users (Admin only)
-router.get("/all-users", authMiddleware, getAllUsers);
+router.post("/all-users", authMiddleware, getAllUsers);
 
 // Get a single user by ID
 router.get("/:id", authMiddleware, getUserById);
