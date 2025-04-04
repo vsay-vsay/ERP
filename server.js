@@ -15,6 +15,7 @@ const classRoutes = require("./routes/classes");
 // const adminRoutes = require("./routes/admin");
 // const studentRoutes = require("./routes/students");
 // const paymentRoutes = require("./routes/payments");
+const feesRoute = require("./routes/fees.js");
 
 const app = express();
 
@@ -28,8 +29,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/teacher", teacherRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/super-admin", superAdminRoutes);
-app.use("/api/events", eventRoutes); 
+app.use("/api/events", eventRoutes);
 app.use("/api/classes", classRoutes);
+app.use("/api/fees", feesRoute);
 // app.use("/api/admin", adminRoutes);
 // app.use("/api/student", studentRoutes);
 // app.use("/api/payments", paymentRoutes);
@@ -40,6 +42,8 @@ mongoose
   .then(() => {
     console.log("MongoDB Connected");
     createSuperAdmin();
-    app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
+    app.listen(process.env.PORT, () =>
+      console.log(`Server running on port ${process.env.PORT}`)
+    );
   })
   .catch((err) => console.error(err));
