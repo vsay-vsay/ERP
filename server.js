@@ -17,6 +17,7 @@ const classRoutes = require("./routes/classes");
 // const paymentRoutes = require("./routes/payments");
 const feesRoute = require("./routes/fees.js");
 const feedbackRoute = require("./routes/feedback.js");
+const examRoute = require("./routes/exam.js");
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use("/api/events", eventRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/fees", feesRoute);
 app.use("/api/feedback", feedbackRoute);
+app.use("exam", examRoute);
 // app.use("/api/admin", adminRoutes);
 // app.use("/api/student", studentRoutes);
 // app.use("/api/payments", paymentRoutes);
