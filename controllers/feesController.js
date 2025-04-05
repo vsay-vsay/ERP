@@ -14,15 +14,30 @@ exports.createFeeForStudent = async (req, res) => {
       paymentStatus,
     } = req.body;
 
-    if (!studentEmail || !className || !classSection || !academicYear || !feeType || paidAmount == null || !paymentStatus) {
-      return res.status(400).json({ success: false, message: "Missing fields" });
+    if (
+      !studentEmail ||
+      !className ||
+      !classSection ||
+      !academicYear ||
+      !feeType ||
+      paidAmount == null ||
+      !paymentStatus
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing fields" });
     }
 
     const student = await Student.findOne({ email: studentEmail });
-    const studentClass = await Class.findOne({ name: className, section: classSection });
+    const studentClass = await Class.findOne({
+      name: className,
+      section: classSection,
+    });
 
-    if (!student) return res.status(400).json({ error: "Student does not exist" });
-    if (!studentClass) return res.status(400).json({ error: "Class does not exist" });
+    if (!student)
+      return res.status(400).json({ error: "Student does not exist" });
+    if (!studentClass)
+      return res.status(400).json({ error: "Class does not exist" });
 
     const newFee = new Fee({
       students: student._id,
@@ -35,9 +50,15 @@ exports.createFeeForStudent = async (req, res) => {
 
     await newFee.save();
 
-    res.status(200).json({ success: true, message: "Fee record created", data: newFee });
+    res
+      .status(200)
+      .json({ success: true, message: "Fee record created", data: newFee });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Internal error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Internal error",
+      error: error.message,
+    });
   }
 };
 
@@ -53,15 +74,28 @@ exports.updateFeeForStudent = async (req, res) => {
       paymentStatus,
     } = req.body;
 
-    if (!studentEmail || !className || !classSection || !academicYear || !feeType) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
+    if (
+      !studentEmail ||
+      !className ||
+      !classSection ||
+      !academicYear ||
+      !feeType
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
     }
 
     const student = await Student.findOne({ email: studentEmail });
-    const studentClass = await Class.findOne({ name: className, section: classSection });
+    const studentClass = await Class.findOne({
+      name: className,
+      section: classSection,
+    });
 
-    if (!student) return res.status(400).json({ error: "Student does not exist" });
-    if (!studentClass) return res.status(400).json({ error: "Class does not exist" });
+    if (!student)
+      return res.status(400).json({ error: "Student does not exist" });
+    if (!studentClass)
+      return res.status(400).json({ error: "Class does not exist" });
 
     const feeRecord = await Fee.findOne({
       students: student._id,
@@ -70,16 +104,23 @@ exports.updateFeeForStudent = async (req, res) => {
       feeType,
     });
 
-    if (!feeRecord) return res.status(404).json({ error: "Fee record not found" });
+    if (!feeRecord)
+      return res.status(404).json({ error: "Fee record not found" });
 
     if (paidAmount !== undefined) feeRecord.paidAmount = paidAmount;
     if (paymentStatus !== undefined) feeRecord.paymentStatus = paymentStatus;
 
     await feeRecord.save();
 
-    res.status(200).json({ success: true, message: "Fee record updated", data: feeRecord });
+    res
+      .status(200)
+      .json({ success: true, message: "Fee record updated", data: feeRecord });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Internal error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Internal error",
+      error: error.message,
+    });
   }
 };
 
@@ -88,15 +129,25 @@ exports.getAllFeeRecords = async (req, res) => {
     const { role, id } = req.user;
 
     let fees;
-    if(id !== undefined){
-      fees = await Fee.find().populate("students").populate("class");
-    }else{
+    if (id && role === "Student") {
+      // Fetch only the fees for this student
+      fees = await Fee.findById({ students: id })
+        .populate("students")
+        .populate("class");
+    } else {
+      // Admin or other roles - fetch all records
       fees = await Fee.find().populate("students").populate("class");
     }
-     
-    res.status(200).json({ success: true, message: "Fees retrieved", data: fees });
+
+    res
+      .status(200)
+      .json({ success: true, message: "Fees retrieved", data: fees });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Internal error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Internal error",
+      error: error.message,
+    });
   }
 };
 
@@ -117,7 +168,8 @@ exports.deleteFeeRecord = async (req, res) => {
   try {
     const { id } = req.params;
     const deleted = await Fee.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ error: "Fee record not found" });
+    if (!deleted)
+      return res.status(404).json({ error: "Fee record not found" });
 
     res.status(200).json({ success: true, message: "Fee deleted" });
   } catch (error) {
@@ -132,15 +184,17 @@ exports.getFeeSummaryByStudent = async (req, res) => {
     if (!student) return res.status(404).json({ error: "Student not found" });
 
     const fees = await Fee.find({ students: student._id });
-    const summary = fees.reduce((acc, fee) => {
-      acc.totalPaid += fee.paidAmount;
-      if (fee.paymentStatus !== "Paid") acc.pendingFees += fee.paidAmount;
-      return acc;
-    }, { totalPaid: 0, pendingFees: 0 });
+    const summary = fees.reduce(
+      (acc, fee) => {
+        acc.totalPaid += fee.paidAmount;
+        if (fee.paymentStatus !== "Paid") acc.pendingFees += fee.paidAmount;
+        return acc;
+      },
+      { totalPaid: 0, pendingFees: 0 }
+    );
 
     res.status(200).json({ success: true, summary });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-
