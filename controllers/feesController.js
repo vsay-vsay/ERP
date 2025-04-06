@@ -131,7 +131,7 @@ exports.getAllFeeRecords = async (req, res) => {
     let fees;
     if (id && role === "Student") {
       // Fetch only the fees for this student
-      fees = await Fee.findById({ students: id })
+      fees = await Fee.find({ students: id })
         .populate("students")
         .populate("class");
     } else {

@@ -9,6 +9,8 @@ const {
 } = require("../controllers/studentController");
 
 const authMiddleware = require("../middleware/authMiddleware");
+const authorizeRoles = require("../middleware/roleMiddleware");
+
 
 const router = express.Router();
 
@@ -19,10 +21,10 @@ router.get("/all", authMiddleware, getAllStudents);
 router.get("/:id", authMiddleware, getStudentById);
 
 // Update student details
-router.put("/:id", authMiddleware, updateStudent);
+router.put("/:id", authorizeRoles("Admin","Teacher" ) ,authMiddleware, updateStudent);
 
 // Delete a student
-router.delete("/:id", authMiddleware, deleteStudent);
+router.delete("/:id",authorizeRoles("Admin"), authMiddleware, deleteStudent);
 
 // Get student marks
 router.get("/:id/marks", authMiddleware, getStudentMarks);

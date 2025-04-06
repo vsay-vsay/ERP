@@ -52,7 +52,7 @@ exports.updateExam = async (req, res) => {
   }
 };
 
-const Exam = require("../models/Exam");
+
 
 exports.getExams = async (req, res) => {
   try {
