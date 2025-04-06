@@ -5,7 +5,10 @@ const User = require("../models/User");
 const Student = require("../models/Student");
 const Domain = require("../models/Domain");
 const Class = require("../models/Class");
-
+const Fee = require("../models/Fee");
+const Teacher = require("../models/Teacher");
+const Attendance = require("../models/Attendance");
+const Exam = require("../models/Exam");
 
 exports.bulkRegister = async (req, res) => {
   try {
@@ -19,15 +22,28 @@ exports.bulkRegister = async (req, res) => {
     const results = {
       created: [],
       skipped: [],
-      errors: []
+      errors: [],
     };
 
+    const domainName = req.user.domainName;
+
+    const domain = await Domain.findOne({ domainName });
+    if (!domain) {
+      fs.unlinkSync(file.path);
+      return res
+        .status(404)
+        .json({ error: "Domain not found for current user" });
+    }
+
     for (const userData of users) {
-      const { name, email, password, role, domainName } = userData;
+      const { name, email, password, role } = userData;
 
       try {
-        if (!name || !email || !password || !role || !domainName) {
-          results.skipped.push({ email: email || "unknown", reason: "Missing fields" });
+        if (!name || !email || !password || !role) {
+          results.skipped.push({
+            email: email || "unknown",
+            reason: "Missing fields",
+          });
           continue;
         }
 
@@ -37,18 +53,12 @@ exports.bulkRegister = async (req, res) => {
           continue;
         }
 
-        const domain = await Domain.findOne({ domainName });
-        if (!domain) {
-          results.skipped.push({ email, reason: "Domain not found" });
-          continue;
-        }
-
         const roleCounts = await User.countDocuments({ domainName, role });
         const roleLimits = {
           Admin: domain.maxAdmins,
           Teacher: domain.maxTeachers,
           Student: domain.maxStudents,
-          Accountant: domain.maxAccountants
+          Accountant: domain.maxAccountants,
         };
 
         if (roleLimits[role] !== undefined && roleCounts >= roleLimits[role]) {
@@ -56,27 +66,45 @@ exports.bulkRegister = async (req, res) => {
           continue;
         }
 
-        const hashedPassword = await bcrypt.hash(String(password), 10); // Ensure password is string
+        const hashedPassword = await bcrypt.hash(String(password), 10);
 
         if (role === "Student") {
           await Promise.all([
-            new Student({ name, email, password: hashedPassword, role, domainName }).save(),
-            new User({ name, email, password: hashedPassword, role, domainName }).save(),
+            new Student({
+              name,
+              email,
+              password: hashedPassword,
+              role,
+              domainName,
+            }).save(),
+            new User({
+              name,
+              email,
+              password: hashedPassword,
+              role,
+              domainName,
+            }).save(),
           ]);
         } else {
-          await new User({ name, email, password: hashedPassword, role, domainName }).save();
+          await new User({
+            name,
+            email,
+            password: hashedPassword,
+            role,
+            domainName,
+          }).save();
         }
 
         results.created.push({ email });
       } catch (innerErr) {
         results.errors.push({
           email: userData.email || "unknown",
-          error: innerErr.message || "Unknown error"
+          error: innerErr.message || "Unknown error",
         });
       }
     }
 
-    fs.unlinkSync(file.path); // Delete uploaded file
+    fs.unlinkSync(file.path);
 
     res.status(200).json({
       message: "Bulk registration completed",
@@ -87,9 +115,6 @@ exports.bulkRegister = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
-
-
 
 exports.bulkCreateClass = async (req, res) => {
   try {
@@ -114,14 +139,21 @@ exports.bulkCreateClass = async (req, res) => {
       const { name, section, description } = row;
 
       if (!name || !section) {
-        results.skipped.push({ name: name || "Unknown", reason: "Missing required fields" });
+        results.skipped.push({
+          name: name || "Unknown",
+          reason: "Missing required fields",
+        });
         continue;
       }
 
       try {
         const existing = await Class.findOne({ name, section });
         if (existing) {
-          results.skipped.push({ name, section, reason: "Class already exists" });
+          results.skipped.push({
+            name,
+            section,
+            reason: "Class already exists",
+          });
           continue;
         }
 
@@ -147,5 +179,111 @@ exports.bulkCreateClass = async (req, res) => {
   } catch (error) {
     console.error("Bulk class creation error:", error);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.bulkAddStudentsFromExcel = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    let added = [];
+    let skipped = [];
+
+    for (const entry of data) {
+      const { name, email, className } = entry;
+
+      if (!name || !email || !className) {
+        skipped.push({ email, reason: "Missing required fields" });
+        continue;
+      }
+
+      const existingStudent = await Student.findOne({ email });
+
+      if (existingStudent) {
+        skipped.push({ email, reason: "Already exists" });
+        continue;
+      }
+
+      const student = new Student({ name, email, className });
+      await student.save();
+      added.push(student);
+    }
+
+    // Optionally remove the uploaded file
+    fs.unlinkSync(req.file.path);
+
+    res.json({
+      message: "Bulk student upload complete",
+      addedCount: added.length,
+      skippedCount: skipped.length,
+      added,
+      skipped,
+    });
+  } catch (error) {
+    console.error("Bulk Upload Error:", error);
+    res.status(500).json({ error: "Server Error" });
+  }
+};
+
+exports.bulkAddExamsFromExcel = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const added = [];
+    const skipped = [];
+
+    for (const [index, entry] of data.entries()) {
+      const { title, subject, date, duration, className } = entry;
+
+      if (!title || !subject || !date || !duration || !className) {
+        skipped.push({ row: index + 2, reason: "Missing required fields" }); // Excel row number
+        continue;
+      }
+
+      try {
+        const exam = new Exam({
+          title: title.trim(),
+          subject: subject.trim(),
+          date: new Date(date), // Parse properly
+          duration: Number(duration),
+          class:className.trim(),
+          createdBy: req.user?._id || null, // Ensure req.user exists
+        });
+
+        await exam.save();
+        added.push(exam);
+      } catch (err) {
+        console.error(`Error saving exam at row ${index + 2}:`, err.message);
+        skipped.push({ row: index + 2, reason: err.message });
+      }
+    }
+
+    // Remove uploaded file safely
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.warn("Error deleting uploaded file:", err);
+    });
+
+    res.json({
+      message: "Bulk exam upload complete",
+      addedCount: added.length,
+      skippedCount: skipped.length,
+      added,
+      skipped,
+    });
+  } catch (error) {
+    console.error("Bulk Upload Error:", error);
+    res.status(500).json({ error: "Server Error" });
   }
 };

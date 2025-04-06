@@ -126,19 +126,8 @@ exports.updateFeeForStudent = async (req, res) => {
 
 exports.getAllFeeRecords = async (req, res) => {
   try {
-    const { role, id } = req.user;
-
-    let fees;
-    if (id && role === "Student") {
-      // Fetch only the fees for this student
-      fees = await Fee.find({ students: id })
-        .populate("students")
-        .populate("class");
-    } else {
-      // Admin or other roles - fetch all records
-      fees = await Fee.find().populate("students").populate("class");
-    }
-
+    // Admin or other roles - fetch all records
+    const fees = await Fee.find().populate("students").populate("class");
     res
       .status(200)
       .json({ success: true, message: "Fees retrieved", data: fees });

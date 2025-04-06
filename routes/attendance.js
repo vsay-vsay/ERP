@@ -15,4 +15,5 @@ router.put("/:id", authenticateUser, authorizeRoles("Admin"), attendanceControll
 router.delete("/:id", authenticateUser, authorizeRoles("Admin"), attendanceController.deleteAttendance);
 
 
+
 module.exports = router;

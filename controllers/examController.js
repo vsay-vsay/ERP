@@ -1,6 +1,6 @@
 const Exam = require("../models/Exam");
 
-const hasExamAccess = (role) => role === "teacher" || role === "admin";
+const hasExamAccess = (role) => role === "Teacher" || role === "Admin";
 
 exports.createExam = async (req, res) => {
   if (!hasExamAccess(req.user.role)) {
@@ -10,12 +10,13 @@ exports.createExam = async (req, res) => {
   }
 
   try {
-    const { title, subject, date, duration } = req.body;
+    const { title, subject, date, duration, className } = req.body;
     const exam = new Exam({
       title,
       subject,
       date,
       duration,
+      class: className,
       createdBy: req.user._id,
     });
 
@@ -52,15 +53,13 @@ exports.updateExam = async (req, res) => {
   }
 };
 
-
-
 exports.getExams = async (req, res) => {
   try {
     let exams;
 
-    if (req.user.role === "admin") {
+    if (req.user.role === "Admin") {
       exams = await Exam.find().populate("createdBy", "email role");
-    } else if (req.user.role === "teacher") {
+    } else if (req.user.role === "Teacher") {
       exams = await Exam.find({ createdBy: req.user._id }).populate(
         "createdBy",
         "email role"
@@ -69,7 +68,7 @@ exports.getExams = async (req, res) => {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    res.status(200).json({ exams });
+    res.status(200).json({ success: true, exams });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
   }

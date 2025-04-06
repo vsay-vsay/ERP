@@ -13,7 +13,7 @@ const { createSuperAdmin } = require("./controllers/superAdminController");
 const eventRoutes = require("./routes/events");
 const classRoutes = require("./routes/classes");
 // const adminRoutes = require("./routes/admin");
-// const studentRoutes = require("./routes/students");
+const studentRoutes = require("./routes/students");
 // const paymentRoutes = require("./routes/payments");
 const feesRoute = require("./routes/fees.js");
 const feedbackRoute = require("./routes/feedback.js");
@@ -36,10 +36,10 @@ app.use("/api/events", eventRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/fees", feesRoute);
 app.use("/api/feedback", feedbackRoute);
-app.use("exam", examRoute);
-app.use("timetable", timetableRoute);
+app.use("/api/exam", examRoute);
+app.use("/api/timetable", timetableRoute);
 // app.use("/api/admin", adminRoutes);
-// app.use("/api/student", studentRoutes);
+app.use("/api/student", studentRoutes);
 // app.use("/api/payments", paymentRoutes);
 
 // Connect to MongoDB

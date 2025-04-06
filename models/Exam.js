@@ -14,6 +14,10 @@ const examSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    class: {
+      type: String,
+      required: true,
+    },
     duration: {
       type: Number, // in minutes
       required: true,
