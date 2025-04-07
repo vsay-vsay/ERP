@@ -4,6 +4,21 @@ const Attendance = require("../models/Attendance");
 const Exam = require("../models/Exam");
 const Timetable = require("../models/Timetable");
 
+
+exports.addTeacher=async(req, res)=>{
+  try {
+    const { name, email, password, gender, subject, classesAssigned, salary, timetable } = req.body;
+    let existingTeacher = await Teacher.findOne({ email });
+    if (existingTeacher) return res.status(400).json({ error: "Teacher already exists" });
+
+    const teacher = new Teacher({ name, email, password, gender, subject, classesAssigned, salary, timetable });
+    await teacher.save();
+    res.json({ message: "Teacher added successfully", teacher });
+  } catch (error) {
+    res.status(500).json({ error: "Server Error" });
+  }
+}
+
 // Get all teachers
 exports.getAllTeachers = async (req, res) => {
   try {

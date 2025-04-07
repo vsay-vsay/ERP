@@ -4,10 +4,10 @@ const Student = require("../models/Student");
 // ✅ Create a new class
 exports.createClass = async (req, res) => {
   try {
-    const { name, section, description } = req.body;
+    const { name, section, description, classTeacher } = req.body;
     const createdBy = req.user.id; // Get logged-in user ID from token
 
-    if (!name || !section) {
+    if (!name || !section || !classTeacher) {
       return res.status(400).json({ error: "Class name and section are required" });
     }
 
