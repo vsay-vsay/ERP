@@ -1,10 +1,13 @@
 const mongoose = require("mongoose");
 
 const TeacherSchema = new mongoose.Schema({
+  teacherId: {
+    type: String,
+  },
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  gender: { type: String, required: true },
+  gender: { type: String },
   subject: { type: String },
   domainName: { type: String },
   classesAssigned: [{ type: String }], // Array of class names assigned

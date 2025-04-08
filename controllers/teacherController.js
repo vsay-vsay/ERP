@@ -3,6 +3,7 @@ const Student = require("../models/Student");
 const Attendance = require("../models/Attendance");
 const Exam = require("../models/Exam");
 const Timetable = require("../models/Timetable");
+const User = require("../models/User");
 
 
 exports.addTeacher = async (req, res) => {
@@ -46,7 +47,7 @@ exports.addTeacher = async (req, res) => {
 
     // Create teacher profile
     const teacher = new Teacher({
-      userId: user._id,
+      teacherId: user.id,
       name,
       email,
       gender,
