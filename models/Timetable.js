@@ -158,14 +158,15 @@ const timetableSchema = new mongoose.Schema(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      refPath: "createdByModel",
+      // refPath
+      ref: "User",
     },
 
-    createdByModel: {
-      type: String,
-      required: true,
-      enum: ["Admin", "Teacher"],
-    },
+    // createdByModel: {
+    //   type: String,
+    //   required: true,
+    //   enum: ["Admin", "Teacher"],
+    // },
   },
   {
     timestamps: true,

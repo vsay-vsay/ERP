@@ -415,15 +415,35 @@ exports.bulkUploadTimetable = async (req, res) => {
     const added = [];
     const skipped = [];
 
-    const domainName = req.user.domainName;
+    const { domainName, id } = req.user;
 
     for (let [index, entry] of data.entries()) {
-      await new Timetable({
-        ...entry,
-        createdAt: new Date().toLocaleDateString(),
-        createdBy: req.user.id,
-        createdByModel: req.user.role,
-      }).save();
+      // 👇 Parse `days` if it's a string (which it usually is from Excel)
+      if (typeof entry.days === "string") {
+        try {
+          entry.days = JSON.parse(entry.days.replace(/'/g, '"'));
+        } catch (err) {
+          console.error(
+            `Row ${index + 1} has invalid JSON in 'days':`,
+            entry.days
+          );
+          skipped.push({ row: index + 1, reason: "Invalid 'days' format" });
+          continue; // Skip this row
+        }
+      }
+
+      try {
+        await new Timetable({
+          ...entry,
+          createdAt: new Date().toLocaleDateString(),
+          createdBy: id,
+          createdByModel: req.user.role,
+        }).save();
+        added.push(index + 1);
+      } catch (saveErr) {
+        console.error(`Row ${index + 1} save error:`, saveErr.message);
+        skipped.push({ row: index + 1, reason: saveErr.message });
+      }
     }
 
     fs.unlink(req.file.path, (err) => {
