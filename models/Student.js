@@ -15,6 +15,7 @@
 // module.exports = mongoose.model("Student", StudentSchema);
 
 const mongoose = require("mongoose");
+const Class = require("./Class");
 
 
 const StudentSchema = new mongoose.Schema({
@@ -62,7 +63,7 @@ const StudentSchema = new mongoose.Schema({
     ref: "Class",
   },
   teacher: {
-    type: Object,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Teacher"
   },
   timetable: {
@@ -81,26 +82,27 @@ StudentSchema.pre("save", async function (next) {
   if (this.rollNo || !this.classId) return next();
 
   try {
-    const classDoc = await mongoose.model("Class").findById(this.classId);
+    console.log("Start Roll no generate1")
+    const classDoc = await Class.findById(this.classId);
     if (!classDoc) return next(new Error("Invalid classId for roll number generation"));
-
-    const classPrefix = classDoc.name.replace(/\s+/g, '').toUpperCase(); // e.g., "10A"
-
+    console.log("Start Roll no End1")
+    const classPrefix = classDoc.name.replace(/\s+/g, '').toUpperCase();
     const currentYear = new Date().getFullYear();
 
-    const count = await mongoose.model("Student").countDocuments({
+    const count = await Student.countDocuments({
       classId: this.classId,
       admissionDate: {
         $gte: new Date(`${currentYear}-01-01`),
         $lte: new Date(`${currentYear}-12-31`)
       }
     });
-
+    console.log("Start Roll no End122")
     const serial = String(count + 1).padStart(3, "0");
     this.rollNo = `${classPrefix}${currentYear}${serial}`;
     next();
   } catch (err) {
-    next(err);
+    console.log(err)
+     throw new Error(err);
   }
 });
 

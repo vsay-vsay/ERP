@@ -27,6 +27,10 @@ exports.bulkRegister = async (req, res) => {
     };
 
     const domainName = req.user.domainName;
+     // Validate domain
+     if (!domainName) {
+      return res.status(400).json({ error: "Domain name is required" });
+    }
 
     const domain = await Domain.findOne({ domainName });
     if (!domain) {
@@ -86,7 +90,23 @@ exports.bulkRegister = async (req, res) => {
               domainName,
             }).save(),
           ]);
-        } else {
+        } else if(role==="Teacher") {
+          new Teacher({
+            name,
+            email,
+            password: hashedPassword,
+            role,
+            domainName,
+          }).save(),
+          await new User({
+            name,
+            email,
+            password: hashedPassword,
+            role,
+            domainName,
+          }).save();
+        }
+        else{
           await new User({
             name,
             email,
@@ -295,49 +315,6 @@ exports.bulkAddExamsFromExcel = async (req, res) => {
   }
 };
 
-exports.addTeachers = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-
-    const workbook = XLSX.readFile(req.file.path);
-    const sheetName = workbook.SheetNames[0];
-    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-    const added = [];
-    const skipped = [];
-
-    const domainName = req.user.domainName;
-
-    for (let [index, entry] of data.entries()) {
-      const { name, email, password, salary } = entry;
-
-      const existing = await User.findOne({ email });
-      if (existing) {
-        console.log(`Teacher with email ${email} already exists.`);
-        continue;
-      }
-
-      const hashedPassword = await bcrypt.hash(String(password), 10);
-
-      await new User({
-        name,
-        email,
-        password: hashedPassword,
-        role: "Teacher",
-        domainName,
-      }).save();
-
-      console.log(`Teacher with email ${email} added.`);
-    }
-
-    res.json({ message: "Teachers added successfully." });
-  } catch (err) {
-    console.error("Error adding teachers:", err);
-    res.status(500).json({ error: "Server Error" });
-  }
-};
 exports.addTeachers = async (req, res) => {
   try {
     if (!req.file) {
