@@ -75,10 +75,10 @@ const timetableSchema = new mongoose.Schema(
       },
     },
 
-    section: {
-      type: String,
-      default: "A",
-    },
+    // section: {
+    //   type: String,
+    //   default: "A",
+    // },
 
     days: [
       {

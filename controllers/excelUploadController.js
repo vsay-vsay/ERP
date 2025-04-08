@@ -11,7 +11,6 @@ const Attendance = require("../models/Attendance");
 const Exam = require("../models/Exam");
 const Timetable = require("../models/Timetable");
 
-
 exports.bulkRegister = async (req, res) => {
   try {
     const file = req.file;
@@ -195,7 +194,7 @@ exports.bulkAddStudentsFromExcel = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
-
+    const { domainName } = req.user;
     const workbook = XLSX.readFile(req.file.path);
     const sheetName = workbook.SheetNames[0];
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
@@ -218,7 +217,7 @@ exports.bulkAddStudentsFromExcel = async (req, res) => {
         continue;
       }
 
-      const student = new Student({ name, email, className });
+      const student = new Student({ name, email, className, domainName });
       await student.save();
       added.push(student);
     }
@@ -267,7 +266,7 @@ exports.bulkAddExamsFromExcel = async (req, res) => {
           date: new Date(date), // Parse properly
           duration: Number(duration),
           class: className.trim(),
-          createdBy: req.user?._id || null, // Ensure req.user exists
+          createdBy: req.user.id || null, // Ensure req.user exists
         });
 
         await exam.save();
@@ -339,65 +338,123 @@ exports.addTeachers = async (req, res) => {
     res.status(500).json({ error: "Server Error" });
   }
 };
+exports.addTeachers = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
+    const added = [];
+    const skipped = [];
 
+    const domainName = req.user.domainName;
 
+    for (let [index, entry] of data.entries()) {
+      const rowNum = index + 2; // header is at 1
 
-// Bulk Timetable 
+      const { name, email, password, salary } = entry;
 
+      // Validate required fields
+      if (!name || !email || !password) {
+        skipped.push({
+          row: rowNum,
+          reason: "Missing required fields (name, email, password)",
+          email: email || "N/A",
+        });
+        continue;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        skipped.push({
+          row: rowNum,
+          reason: "Invalid email format",
+          email,
+        });
+        continue;
+      }
+
+      // Check for duplicates
+      const existing = await User.findOne({ email });
+      if (existing) {
+        skipped.push({
+          row: rowNum,
+          reason: "Email already exists",
+          email,
+        });
+        continue;
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(String(password), 10);
+
+      // Save to DB
+      await new User({
+        name,
+        email,
+        password: hashedPassword,
+        role: "Teacher",
+        salary: salary || 0,
+        domainName,
+      }).save();
+
+      added.push({ row: rowNum, email });
+    }
+
+    // Optional: Delete uploaded file
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.warn("Failed to delete file:", err.message);
+    });
+
+    res.json({
+      message: "Bulk teacher upload completed",
+      addedCount: added.length,
+      skippedCount: skipped.length,
+      added,
+      skipped,
+    });
+  } catch (err) {
+    console.error("Error adding teachers:", err);
+    res.status(500).json({ error: "Server Error during bulk upload" });
+  }
+};
+
+// Bulk Timetable
 
 exports.bulkUploadTimetable = async (req, res) => {
   try {
-    const filePath = req.file.path;
-    const workbook = XLSX.readFile(filePath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet);
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
-    const timetableMap = {};
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-    // Group rows by Title + AssignedToID
-    rows.forEach((row) => {
-      const key = `${row.Title}_${row.AssignedToID}`;
-      if (!timetableMap[key]) {
-        timetableMap[key] = {
-          title: row.Title,
-          forRole: row.ForRole,
-          forRoleRef: row.ForRoleRef,
-          assignedTo: row.AssignedToID,
-          classId: row.ClassID,
-          academicYear: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
-          days: {},
-        };
-      }
+    const added = [];
+    const skipped = [];
 
-      const day = row.Day;
-      if (!timetableMap[key].days[day]) {
-        timetableMap[key].days[day] = [];
-      }
+    const domainName = req.user.domainName;
 
-      timetableMap[key].days[day].push({
-        subject: row.Subject,
-        startTime: row.StartTime,
-        endTime: row.EndTime,
-        teacher: row.TeacherID,
-        room: row.Room || "Not Assigned",
-      });
+    for (let [index, entry] of data.entries()) {
+      await new Timetable({
+        ...entry,
+        createdAt: new Date().toLocaleDateString(),
+        createdBy: req.user.id,
+        createdByModel: req.user.role,
+      }).save();
+    }
+
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.warn("Failed to delete file:", err.message);
     });
 
-    // Convert to documents
-    const documents = Object.values(timetableMap).map((item) => ({
-      ...item,
-      days: Object.entries(item.days).map(([day, periods]) => ({
-        day,
-        periods,
-      })),
-    }));
-
-    await Timetable.insertMany(documents);
-    fs.unlinkSync(filePath); // delete after upload
-
-    res.json({ message: "Bulk upload successful", count: documents.length });
+    res.json({ message: "Timetable added successfully." });
   } catch (err) {
     console.error("Bulk upload error:", err);
     res.status(500).json({ error: "Failed to process bulk upload" });

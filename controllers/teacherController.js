@@ -14,7 +14,7 @@ exports.addTeacher = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const domainName = req.user?.domainName || "default";
+    const domainName = req.user.domainName || "default";
 
     let user = await User.findOne({ email });
 
@@ -55,6 +55,7 @@ exports.addTeacher = async (req, res) => {
       classesAssigned,
       salary,
       timetable,
+      domainName
     });
     await teacher.save();
 
