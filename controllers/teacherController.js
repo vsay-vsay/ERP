@@ -94,11 +94,12 @@ exports.getTeacherById = async (req, res) => {
 // Add a student to a class
 exports.addStudentToClass = async (req, res) => {
   try {
-    const { name, email, className, rollNo } = req.body;
-    let existingStudent = await Student.findOne({ rollNo });
+    const {classId} = req.params;
+    const { name, email, className } = req.body;
+    let existingStudent = await Student.findOne({ email });
     if (existingStudent) return res.status(400).json({ error: "Student already exists" });
 
-    const student = new Student({ name, email, className });
+    const student = new Student({ name, email, className, classId });
     await student.save();
     res.json({ message: "Student added to class successfully", student });
   } catch (error) {

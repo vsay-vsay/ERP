@@ -1,5 +1,6 @@
 const Class = require("../models/Class");
 const Student = require("../models/Student");
+const User = require("../models/User");
 
 // ✅ Create a new class
 exports.createClass = async (req, res) => {
@@ -75,7 +76,8 @@ exports.getClassDetails = async (req, res) => {
     const classId = req.params.id;
     const classDetails = await Class.findById(classId)
       .populate("createdBy", "name email") // Show creator info
-      .populate("students", "name email className"); // Show students list
+      .populate("students", "name email className")
+      .populate("classTeacher", "name email subject"); // Show students list
 
     if (!classDetails)
       return res.status(404).json({ error: "Class not found" });
@@ -113,31 +115,43 @@ exports.deleteClass = async (req, res) => {
 exports.addStudentToClass = async (req, res) => {
   try {
     const classId = req.params.id;
-    const { email } = req.body; // ✅ Get student by email instead of `_id`
+    const { email, ...rest } = req.body;
 
-    // ✅ Find the class
+    // Find the class
     const existingClass = await Class.findById(classId);
-    if (!existingClass)
+    if (!existingClass) {
       return res.status(404).json({ error: "Class not found" });
-
-    // ✅ Check if the student exists in Student collection
-    const student = await Student.findOne({ email });
-    if (!student) {
-      return res
-        .status(404)
-        .json({ error: "Student not found in Student collection" });
     }
 
-    // ✅ Prevent duplicate students
+    // Check if the user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "Student not found in User collection" });
+    }
+
+    // Check if student already exists in Student collection
+    let student = await Student.findOne({ email });
+    if (!student) {
+      student = new Student({
+        classId,
+        name: user.name,
+        email,
+        password: user.password,
+        ...rest,
+      });
+    }
+
+    // Prevent duplicate students in class
     if (existingClass.students.includes(student._id)) {
       return res.status(400).json({ error: "Student already in this class" });
     }
 
-    // ✅ Add student to class & update Student model with classId
+    // Add student to class and link class to student
     existingClass.students.push(student._id);
-    student.classId = classId; // ✅ Link student to the class
-    await existingClass.save();
+    student.classId = classId;
+
     await student.save();
+    await existingClass.save();
 
     res.status(200).json({
       message: "Student added to class successfully",
@@ -148,6 +162,7 @@ exports.addStudentToClass = async (req, res) => {
     res.status(500).json({ error: "Server Error" });
   }
 };
+
 
 exports.removeStudentFromClass = async (req, res) => {
   try {

@@ -46,22 +46,22 @@ const eventSchema = new mongoose.Schema({
     default: ['Student', 'Teacher', 'Admin', 'Accountant']
   },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  attachments: [{
-    fileUrl: String,
-    fileName: String,
-  }],
-  allowRegistration: {
-    type: Boolean,
-    default: false,
-  },
-  registeredStudents: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Student'
-  }],
-  isPublished: {
-    type: Boolean,
-    default: true,
-  },
+  // attachments: [{
+  //   fileUrl: String,
+  //   fileName: String,
+  // }],
+  // allowRegistration: {
+  //   type: Boolean,
+  //   default: false,
+  // },
+  // registeredStudents: [{
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: 'Student'
+  // }],
+  // isPublished: {
+  //   type: Boolean,
+  //   default: true,
+  // },
 }, {
   timestamps: true,
 });

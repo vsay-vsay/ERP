@@ -27,8 +27,8 @@ exports.bulkRegister = async (req, res) => {
     };
 
     const domainName = req.user.domainName;
-     // Validate domain
-     if (!domainName) {
+    // Validate domain
+    if (!domainName) {
       return res.status(400).json({ error: "Domain name is required" });
     }
 
@@ -73,31 +73,7 @@ exports.bulkRegister = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(String(password), 10);
 
-        if (role === "Student") {
-          await Promise.all([
-            new Student({
-              name,
-              email,
-              password: hashedPassword,
-              role,
-              domainName,
-            }).save(),
-            new User({
-              name,
-              email,
-              password: hashedPassword,
-              role,
-              domainName,
-            }).save(),
-          ]);
-        } else if(role==="Teacher") {
-          new Teacher({
-            name,
-            email,
-            password: hashedPassword,
-            role,
-            domainName,
-          }).save(),
+        if (role === "Teacher") {
           await new User({
             name,
             email,
@@ -105,8 +81,14 @@ exports.bulkRegister = async (req, res) => {
             role,
             domainName,
           }).save();
-        }
-        else{
+          new Teacher({
+            name,
+            email,
+            password: hashedPassword,
+            role,
+            domainName,
+          }).save();
+        } else {
           await new User({
             name,
             email,
@@ -125,7 +107,9 @@ exports.bulkRegister = async (req, res) => {
       }
     }
 
-    fs.unlinkSync(file.path);
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.warn("Error deleting uploaded file:", err);
+    });
 
     res.status(200).json({
       message: "Bulk registration completed",
@@ -165,6 +149,21 @@ exports.bulkCreateClass = async (req, res) => {
           reason: "Missing required fields",
         });
         continue;
+      }
+
+      let classTeacherId = null;
+
+      if (classTeacher) {
+        const teacherDoc = await Teacher.findOne({ _id: classTeacher });
+
+        if (teacherDoc) {
+          classTeacherId = teacherDoc._id;
+        } else {
+          results.skipped.push({
+            name,
+            reason: `Teacher "${classTeacher}" not found — skipped assigning`,
+          });
+        }
       }
 
       try {

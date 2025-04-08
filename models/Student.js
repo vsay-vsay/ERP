@@ -1,17 +1,3 @@
-// const mongoose = require("mongoose");
-
-// const StudentSchema = new mongoose.Schema({
-//   name: { type: String, required: true },
-//   email: { type: String, required: true, unique: true },
-//   password: { type: String, required: true },
-//   classId: { type: mongoose.Schema.Types.ObjectId, ref: "Class" }, // ✅ Link to Class Model
-//   marks: { type: Object, default: {} }, // ✅ Stores exam name and marks
-//   teacherId: { type: mongoose.Schema.Types.ObjectId, ref: "Teacher" }, // ✅ Link to Teacher Model
-//   timetable: { type: mongoose.Schema.Types.ObjectId, ref: "Timetable" }, //
-// });
-
-// module.exports = mongoose.model("Student", StudentSchema);
-
 const mongoose = require("mongoose");
 const Class = require("./Class");
 
@@ -76,7 +62,7 @@ const StudentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Auto-generate rollNo before saving
+// ✅ Fixed auto-generate rollNo before saving
 StudentSchema.pre("save", async function (next) {
   if (this.rollNo || !this.classId) return next();
 
@@ -87,7 +73,7 @@ StudentSchema.pre("save", async function (next) {
     const classPrefix = classDoc.name.replace(/\s+/g, "").toUpperCase();
     const year = new Date().getFullYear();
 
-    const count = await Student.countDocuments({
+    const count = await this.constructor.countDocuments({
       classId: this.classId,
       admissionDate: {
         $gte: new Date(`${year}-01-01`),
