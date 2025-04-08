@@ -19,6 +19,7 @@ const feesRoute = require("./routes/fees.js");
 const feedbackRoute = require("./routes/feedback.js");
 const examRoute = require("./routes/exam.js");
 const timetableRoute = require("./routes/timetable.js");
+const commonRoute = require("./routes/common.js");
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use("/api/timetable", timetableRoute);
 // app.use("/api/admin", adminRoutes);
 app.use("/api/student", studentRoutes);
 // app.use("/api/payments", paymentRoutes);
+app.use("/api/common", commonRoute);
 
 // Connect to MongoDB
 mongoose

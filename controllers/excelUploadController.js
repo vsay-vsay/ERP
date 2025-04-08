@@ -136,7 +136,7 @@ exports.bulkCreateClass = async (req, res) => {
     };
 
     for (const row of rows) {
-      const { name, section, description } = row;
+      const { name, section, description, classTeacher } = row;
 
       if (!name || !section) {
         results.skipped.push({
@@ -157,7 +157,7 @@ exports.bulkCreateClass = async (req, res) => {
           continue;
         }
 
-        const newClass = new Class({ name, section, description, createdBy });
+        const newClass = new Class({ name, section, description,classTeacher, createdBy });
         await newClass.save();
 
         results.created.push({ name, section });

@@ -60,8 +60,8 @@ const StudentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Class",
   },
-  teacherId: {
-    type: mongoose.Schema.Types.ObjectId,
+  teacher: {
+    type: Object,
     ref: "Teacher"
   },
   timetable: {

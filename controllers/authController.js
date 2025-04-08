@@ -82,10 +82,15 @@ const Domain = require("../models/Domain");
               new Student({ name, email, password: hashedPassword, role,domainName }).save(),
               new User({ name, email, password: hashedPassword, role, domainName }).save()
           ]);
-        } else {
+        } else if(role==="Teacher") {
             // ✅ Store other users in the User collection
-            const user = new User({ name, email, password: hashedPassword, role, domainName });
-            await user.save();
+            new Teacher({ name, email, password: hashedPassword, role,domainName }).save()
+            new User({ name, email, password: hashedPassword, role, domainName }).save();
+            
+        }
+        else{
+          const user = new User({ name, email, password: hashedPassword, role, domainName });
+          await user.save();
         }
 
         res.status(201).json({ message: `${role} created successfully in ${domainName}` });
