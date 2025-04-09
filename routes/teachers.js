@@ -9,13 +9,18 @@ const {
   getTimetable, 
   addStudentTimetable 
 } = require("../controllers/teacherController");
+const upload = require("../middleware/uploadMiddleware");
+
 
 const authMiddleware = require("../middleware/authMiddleware");
+const { bulkAddStudentsFromExcel } = require("../controllers/excelUploadController");
 
 const router = express.Router();
 
 // Get all teachers
 router.get("/all", authMiddleware, getAllTeachers);
+
+router.post('/add-students', upload.single('file'), bulkAddStudentsFromExcel);
 
 // Get a specific teacher by ID
 router.get("/:id", authMiddleware, getTeacherById);
