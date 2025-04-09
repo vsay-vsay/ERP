@@ -17,7 +17,7 @@ exports.createExam = async (req, res) => {
       date,
       duration,
       class: className,
-      createdBy: req.user._id,
+      createdBy: req.user.id,
     });
 
     await exam.save();

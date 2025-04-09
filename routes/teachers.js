@@ -1,26 +1,31 @@
 const express = require("express");
-const { 
-  getAllTeachers, 
-  getTeacherById, 
-  addStudentToClass, 
-  markAttendance, 
-  scheduleExam, 
-  assignMarks, 
-  getTimetable, 
-  addStudentTimetable 
+const {
+  getAllTeachers,
+  getTeacherById,
+  addStudentToClass,
+  markAttendance,
+  scheduleExam,
+  assignMarks,
+  getTimetable,
+  addStudentTimetable,
+  addTeacher,
 } = require("../controllers/teacherController");
 const upload = require("../middleware/uploadMiddleware");
 
-
 const authMiddleware = require("../middleware/authMiddleware");
-const { bulkAddStudentsFromExcel } = require("../controllers/excelUploadController");
+const {
+  bulkAddStudentsFromExcel,
+} = require("../controllers/excelUploadController");
+const roleMiddleware = require("../middleware/roleMiddleware");
 
 const router = express.Router();
+
+router.post("/add", authMiddleware, roleMiddleware("Admin"), addTeacher);
 
 // Get all teachers
 router.get("/all", authMiddleware, getAllTeachers);
 
-router.post('/add-students', upload.single('file'), bulkAddStudentsFromExcel);
+router.post("/add-students", upload.single("file"), bulkAddStudentsFromExcel);
 
 // Get a specific teacher by ID
 router.get("/:id", authMiddleware, getTeacherById);
