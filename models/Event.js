@@ -41,7 +41,7 @@ const eventSchema = new mongoose.Schema({
     required: true,
   },
   visibility: {
-    type: String,
+    type: [String], // This means it's an array of strings
     enum: ['Admin', 'Teacher', 'Student', 'Accountant'],
     default: ['Student', 'Teacher', 'Admin', 'Accountant']
   },

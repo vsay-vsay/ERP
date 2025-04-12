@@ -28,6 +28,6 @@ router.delete(
   authorizeRoles("Admin", "Teacher"),
   deleteEvent
 ); // ✅ Delete an event
-router.get("/all-event", getAllEvents); // ✅ Get all events (public)
+router.get("/all-event", authMiddleware, getAllEvents); // ✅ Get all events (public)
 
 module.exports = router;
