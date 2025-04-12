@@ -5,10 +5,18 @@ const Exam = require("../models/Exam");
 const Timetable = require("../models/Timetable");
 const User = require("../models/User");
 
-
 exports.addTeacher = async (req, res) => {
   try {
-    const { name, email, password, gender, subject, classesAssigned, salary, timetable } = req.body;
+    const {
+      name,
+      email,
+      password,
+      gender,
+      subject,
+      classesAssigned,
+      salary,
+      timetable,
+    } = req.body;
 
     if (!name || !email || !password || !subject) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -30,7 +38,6 @@ exports.addTeacher = async (req, res) => {
         user.role = "Teacher"; // Optionally update role
         await user.save();
       }
-
     } else {
       // Create a new user if not found
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -55,7 +62,7 @@ exports.addTeacher = async (req, res) => {
       classesAssigned,
       salary,
       timetable,
-      domainName
+      domainName,
     });
     await teacher.save();
 
@@ -63,7 +70,6 @@ exports.addTeacher = async (req, res) => {
       message: "Teacher added successfully",
       teacher,
     });
-
   } catch (error) {
     console.error("Add Teacher Error:", error);
     res.status(500).json({ error: "Server Error" });
@@ -94,16 +100,23 @@ exports.getTeacherById = async (req, res) => {
 // Add a student to a class
 exports.addStudentToClass = async (req, res) => {
   try {
-    const {classId} = req.params;
-    const { name, email, className } = req.body;
+    const { id } = req.params;
+    const { name, email, className, password } = req.body;
     let existingStudent = await Student.findOne({ email });
-    if (existingStudent) return res.status(400).json({ error: "Student already exists" });
+    if (existingStudent)
+      return res.status(400).json({ error: "Student already exists" });
 
-    const student = new Student({ name, email, className, classId });
+    const student = new Student({
+      name,
+      email,
+      password,
+      className,
+      classId: id,
+    });
     await student.save();
     res.json({ message: "Student added to class successfully", student });
   } catch (error) {
-    res.status(500).json({ error: "Server Error" });
+    res.status(500).json({ error });
   }
 };
 
@@ -156,7 +169,8 @@ exports.getTimetable = async (req, res) => {
   try {
     const { id } = req.params;
     const timetable = await Timetable.find({ teacher: id });
-    if (!timetable.length) return res.status(404).json({ error: "Timetable not found" });
+    if (!timetable.length)
+      return res.status(404).json({ error: "Timetable not found" });
 
     res.json(timetable);
   } catch (error) {
@@ -171,7 +185,12 @@ exports.addStudentTimetable = async (req, res) => {
     const teacher = await Teacher.findById(teacherId);
     if (!teacher) return res.status(404).json({ error: "Teacher not found" });
 
-    const timetable = new Timetable({ teacher: teacher._id, className, day, periods });
+    const timetable = new Timetable({
+      teacher: teacher._id,
+      className,
+      day,
+      periods,
+    });
     await timetable.save();
 
     res.json({ message: "Timetable added successfully", timetable });
