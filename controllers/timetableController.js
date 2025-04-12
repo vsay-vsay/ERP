@@ -1,10 +1,13 @@
+const Class = require("../models/Class");
+const Teacher = require("../models/Teacher");
 const Timetable = require("../models/Timetable");
 const mongoose = require("mongoose");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 exports.createTimetable = async (req, res) => {
-  const { title, days, forRole, forRoleRef, assignedTo } = req.body;
+  const { title, days, forRole, forRoleRef, assignedTo, className, section } =
+    req.body;
 
   if (
     !["Teacher", "Student"].includes(forRole) ||
@@ -13,9 +16,26 @@ exports.createTimetable = async (req, res) => {
     return res.status(400).json({ error: "Invalid role or reference" });
   }
 
-  if (!isValidId(assignedTo)) {
+  const teacherDoc = await Teacher.findOne({ email: assignedTo });
+
+  if (!teacherDoc)
+    return res
+      .status(404)
+      .json({ success: false, msg: "Teacher does not exist" });
+
+  if (!isValidId(teacherDoc._id)) {
     return res.status(400).json({ error: "Invalid assignedTo ID" });
   }
+
+  const classDoc = await Class.findOne({
+    name: `Class ${className}`,
+    section: section,
+  });
+
+  if (!classDoc)
+    return res
+      .status(404)
+      .json({ success: false, msg: "Class does not exist" });
 
   // Teachers can only assign to students
   if (req.role === "Teacher" && forRoleRef !== "Student") {
@@ -24,12 +44,28 @@ exports.createTimetable = async (req, res) => {
       .json({ error: "Teachers can only assign timetables to students" });
   }
 
+  // Map period.teacher from email to ObjectId
+  for (const day of days) {
+    for (const period of day.periods) {
+      if (period.teacher && typeof period.teacher === "string") {
+        const teacher = await Teacher.findOne({ email: period.teacher });
+        if (!teacher) {
+          return res.status(400).json({
+            error: `Teacher with email ${period.teacher} not found`,
+          });
+        }
+        period.teacher = teacher._id;
+      }
+    }
+  }
+
   const timetable = new Timetable({
     title,
+    classId: classDoc._id,
     days,
     forRole,
     forRoleRef,
-    assignedTo,
+    assignedTo: teacherDoc._id,
     createdBy: req.user.id,
     createdByModel: req.user.role === "Admin" ? "Admin" : "Teacher",
   });
@@ -114,18 +150,20 @@ exports.getTimetables = async (req, res) => {
     }
 
     const timetables = await Timetable.find(filter)
-      .populate("assignedTo")
-      .populate("createdBy");
+      .populate("classId", "name section")
+      .populate("assignedTo", "name")
+      .populate("createdBy")
+      .populate({
+        path: "days.periods.teacher",
+        model: "Teacher",
+        select: "name email",
+      });
 
     res.status(200).json({ success: true, data: timetables });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch", details: err.message });
   }
 };
-
-
-
-
 
 // // controllers/timetableController.js
 // const Timetable = require("../models/Timetable");
