@@ -4,6 +4,7 @@ const Attendance = require("../models/Attendance");
 const Exam = require("../models/Exam");
 const Timetable = require("../models/Timetable");
 const User = require("../models/User");
+const Class = require("../models/Class");
 
 exports.addTeacher = async (req, res) => {
   try {
@@ -100,23 +101,35 @@ exports.getTeacherById = async (req, res) => {
 // Add a student to a class
 exports.addStudentToClass = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, email, className, password } = req.body;
-    let existingStudent = await Student.findOne({ email });
-    if (existingStudent)
-      return res.status(400).json({ error: "Student already exists" });
+    const { email, classId } = req.body;
 
-    const student = new Student({
-      name,
-      email,
-      password,
-      className,
-      classId: id,
+    const student = await Student.findOne({ email });
+
+    if (!student) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "No student exists with that email." });
+    }
+
+    const updatedClass = await Class.findByIdAndUpdate(
+      classId,
+      { $addToSet: { students: student._id } }, // $addToSet avoids duplicates
+      { new: true }
+    );
+
+    if (!updatedClass) {
+      return res.status(404).json({ success: false, msg: "Class not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Student added to class successfully",
+      student,
+      class: updatedClass,
     });
-    await student.save();
-    res.json({ message: "Student added to class successfully", student });
   } catch (error) {
-    res.status(500).json({ error });
+    console.error(error);
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
