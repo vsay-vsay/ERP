@@ -35,6 +35,7 @@ exports.createEvent = async (req, res) => {
 exports.updateEvent = async (req, res) => {
   try {
     const data = req.body;
+    const data = req.body;
     const eventId = req.params.id;
 
     const event = await Event.findById(eventId);
@@ -45,8 +46,15 @@ exports.updateEvent = async (req, res) => {
       return res
         .status(403)
         .json({ error: "Unauthorized to update this event" });
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to update this event" });
     }
 
+    // 🔄 Dynamically update all fields from req.body
+    Object.keys(data).forEach((key) => {
+      event[key] = data[key] || event[key];
+    });
     // 🔄 Dynamically update all fields from req.body
     Object.keys(data).forEach((key) => {
       event[key] = data[key] || event[key];
@@ -56,9 +64,11 @@ exports.updateEvent = async (req, res) => {
     res.json({ message: "Event updated successfully", event });
   } catch (error) {
     console.error(error);
+    console.error(error);
     res.status(500).json({ error: "Server Error" });
   }
 };
+
 
 // ✅ Delete an event
 exports.deleteEvent = async (req, res) => {
@@ -70,6 +80,9 @@ exports.deleteEvent = async (req, res) => {
 
     // ✅ Ensure only the creator can delete the event
     if (event.createdBy.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to delete this event" });
       return res
         .status(403)
         .json({ error: "Unauthorized to delete this event" });

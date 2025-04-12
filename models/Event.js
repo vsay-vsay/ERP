@@ -1,4 +1,5 @@
 // const mongoose = require("mongoose");
+// const mongoose = require("mongoose");
 
 // const EventSchema = new mongoose.Schema({
 //   title: { type: String, required: true },
@@ -64,6 +65,25 @@ const eventSchema = new mongoose.Schema({
   // },
 }, {
   timestamps: true,
+  // attachments: [{
+  //   fileUrl: String,
+  //   fileName: String,
+  // }],
+  // allowRegistration: {
+  //   type: Boolean,
+  //   default: false,
+  // },
+  // registeredStudents: [{
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: 'Student'
+  // }],
+  // isPublished: {
+  //   type: Boolean,
+  //   default: true,
+  // },
+}, {
+  timestamps: true,
 });
 
+module.exports = mongoose.model('Event', eventSchema);
 module.exports = mongoose.model('Event', eventSchema);
