@@ -9,8 +9,11 @@ exports.getAllUsers = async (req, res) => {
       return res.status(400).json({ error: "Domain is required" });
     }
 
-    const users = await User.find({ domainName: domain }).select("-password"); // Exclude passwords
-
+    const users = await User.find({
+      domainName: domain,
+      _id: { $ne: req.user.id } // Exclude current user
+    }).select("-password");
+    
     if (users.length === 0) {
       return res.status(404).json({ message: "No users found for this domain" });
     }

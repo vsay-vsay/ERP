@@ -7,7 +7,7 @@ module.exports = async (req, res, next) => {
 
   try {
     const verified = jwt.verify(token.replace("Bearer ", ""), process.env.JWT_SECRET);
-    req.user = await User.findById(verified.id).select("email role");
+    req.user = await User.findById(verified.id).select("email role domainName");
     if (!req.user) return res.status(404).json({ error: "User not found" });
 
     next();

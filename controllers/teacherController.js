@@ -3,6 +3,72 @@ const Student = require("../models/Student");
 const Attendance = require("../models/Attendance");
 const Exam = require("../models/Exam");
 const Timetable = require("../models/Timetable");
+const User = require("../models/User");
+
+
+exports.addTeacher = async (req, res) => {
+  try {
+    const { name, email, password, gender, subject, classesAssigned, salary, timetable } = req.body;
+
+    if (!name || !email || !password || !subject) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const domainName = req.user.domainName || "default";
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // Check if user is already a teacher
+      const existingTeacher = await Teacher.findOne({ email });
+      if (existingTeacher) {
+        return res.status(400).json({ error: "Teacher already exists" });
+      }
+
+      // If user exists but no teacher profile, reuse user
+      if (user.role !== "Teacher") {
+        user.role = "Teacher"; // Optionally update role
+        await user.save();
+      }
+
+    } else {
+      // Create a new user if not found
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      user = new User({
+        name,
+        email,
+        password: hashedPassword,
+        role: "Teacher",
+        domainName,
+      });
+      await user.save();
+    }
+
+    // Create teacher profile
+    const teacher = new Teacher({
+      teacherId: user.id,
+      name,
+      email,
+      gender,
+      subject,
+      classesAssigned,
+      salary,
+      timetable,
+      domainName
+    });
+    await teacher.save();
+
+    res.status(201).json({
+      message: "Teacher added successfully",
+      teacher,
+    });
+
+  } catch (error) {
+    console.error("Add Teacher Error:", error);
+    res.status(500).json({ error: "Server Error" });
+  }
+};
 
 // Get all teachers
 exports.getAllTeachers = async (req, res) => {
@@ -28,11 +94,12 @@ exports.getTeacherById = async (req, res) => {
 // Add a student to a class
 exports.addStudentToClass = async (req, res) => {
   try {
+    const {classId} = req.params;
     const { name, email, className } = req.body;
     let existingStudent = await Student.findOne({ email });
     if (existingStudent) return res.status(400).json({ error: "Student already exists" });
 
-    const student = new Student({ name, email, className });
+    const student = new Student({ name, email, className, classId });
     await student.save();
     res.json({ message: "Student added to class successfully", student });
   } catch (error) {

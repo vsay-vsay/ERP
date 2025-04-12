@@ -11,7 +11,7 @@ exports.getTeacherDashboard = async (req, res) => {
     try {
       console.log("User from token:", req.user); // Debugging line
   
-      const teacher = await Teacher.findOne({ email: req.user.email });
+      const teacher = await Teacher.findOne({  id:req.user.id });
       if (!teacher) return res.status(404).json({ error: "Teacher not found" });
   
       const students = await Student.find({ className: { $in: teacher.classesAssigned } });

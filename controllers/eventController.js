@@ -3,18 +3,30 @@ const Event = require("../models/Event");
 // ✅ Create a new event
 exports.createEvent = async (req, res) => {
   try {
-    const { title, description, date, location } = req.body;
+    const { title, description, location, startDate, endDate, ...rest } =
+      req.body;
     const createdBy = req.user.id; // Get logged-in user ID from token
 
-    if (!title || !date || !location) {
-      return res.status(400).json({ error: "Title, date, and location are required" });
+    if (!title || !location || !startDate || !endDate || !description) {
+      return res
+        .status(400)
+        .json({ error: "Title, startDate, endDate and location are required" });
     }
 
-    const event = new Event({ title, description, date, location, createdBy });
+    const event = new Event({
+      title,
+      description,
+      location,
+      createdBy,
+      startDate,
+      endDate,
+      ...rest,
+    });
     await event.save();
 
     res.status(201).json({ message: "Event created successfully", event });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Server Error" });
   }
 };
@@ -22,7 +34,7 @@ exports.createEvent = async (req, res) => {
 // ✅ Update an event
 exports.updateEvent = async (req, res) => {
   try {
-    const { title, description, date, location } = req.body;
+    const data = req.body;
     const eventId = req.params.id;
 
     const event = await Event.findById(eventId);
@@ -30,17 +42,20 @@ exports.updateEvent = async (req, res) => {
 
     // ✅ Ensure only the creator can update the event
     if (event.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ error: "Unauthorized to update this event" });
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to update this event" });
     }
 
-    event.title = title || event.title;
-    event.description = description || event.description;
-    event.date = date || event.date;
-    event.location = location || event.location;
+    // 🔄 Dynamically update all fields from req.body
+    Object.keys(data).forEach((key) => {
+      event[key] = data[key] || event[key];
+    });
 
     await event.save();
     res.json({ message: "Event updated successfully", event });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Server Error" });
   }
 };
@@ -55,7 +70,9 @@ exports.deleteEvent = async (req, res) => {
 
     // ✅ Ensure only the creator can delete the event
     if (event.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ error: "Unauthorized to delete this event" });
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to delete this event" });
     }
 
     await event.deleteOne();
@@ -68,9 +85,22 @@ exports.deleteEvent = async (req, res) => {
 // ✅ Get all events
 exports.getAllEvents = async (req, res) => {
   try {
-    const events = await Event.find().populate("createdBy", "name email"); // ✅ Populate creator info
+    const { role } = req.user;
+
+    let events;
+
+    if (role === "Admin") {
+      events = await Event.find().select("-visibility").populate("createdBy", "name email");
+    } else {
+      events = await Event.find({
+        visibility: { $in: [role] },
+      }).select("-visibility").populate("createdBy", "name email");
+    }
+
     res.json(events);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Server Error" });
   }
 };
+
