@@ -35,7 +35,6 @@ exports.createEvent = async (req, res) => {
 exports.updateEvent = async (req, res) => {
   try {
     const data = req.body;
-    const data = req.body;
     const eventId = req.params.id;
 
     const event = await Event.findById(eventId);

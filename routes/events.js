@@ -5,14 +5,8 @@ const {
   deleteEvent,
   getAllEvents,
 } = require("../controllers/eventController");
-const {
-  createEvent,
-  updateEvent,
-  deleteEvent,
-  getAllEvents,
-} = require("../controllers/eventController");
+
 const authMiddleware = require("../middleware/authMiddleware"); // ✅ Protect routes
-const authorizeRoles = require("../middleware/roleMiddleware");
 const authorizeRoles = require("../middleware/roleMiddleware");
 
 const router = express.Router();
