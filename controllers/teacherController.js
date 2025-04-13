@@ -238,8 +238,6 @@ exports.getClassAttendance = async (req, res) => {
   try {
     const { studentIds } = req.query;
 
-    console.log("Filtered Student IDs:", studentIds);
-
     const filter = {};
 
     // If filtered student IDs are provided, filter by them
