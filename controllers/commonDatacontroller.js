@@ -1,7 +1,8 @@
 const User = require("../models/User");
 const Timetable = require("../models/Timetable");
 const Exam = require("../models/Exam"); // Assume you have this model
-const Student=require("../models/Student")
+const Student=require("../models/Student");
+const Class = require("../models/Class");
 
 // Function to fetch specific fields from different models
 exports.getCommonData = async (req, res) => {
@@ -10,7 +11,9 @@ exports.getCommonData = async (req, res) => {
       User.find({ role: "Teacher" }).select("_id name email"),
       User.find({ role: "Student" }).select("_id name rollNo class section email"),
       Timetable.distinct("class"),
-      Exam.find().select("_id title class date")
+      Exam.find().select("_id title class date"),
+      Class.find().select("_id name section classTeacher")
+
     ]);
 
     res.json({

@@ -4,6 +4,7 @@ const {
   updateEvent,
   deleteEvent,
   getAllEvents,
+  getIdwiseEvent,
 } = require("../controllers/eventController");
 
 const authMiddleware = require("../middleware/authMiddleware"); // ✅ Protect routes
@@ -30,5 +31,7 @@ router.delete(
   deleteEvent
 ); // ✅ Delete an event
 router.get("/all-event", authMiddleware, getAllEvents); // ✅ Get all events (public)
+
+router.get("/:id", authMiddleware, getIdwiseEvent);
 
 module.exports = router;

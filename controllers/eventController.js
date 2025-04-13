@@ -68,7 +68,6 @@ exports.updateEvent = async (req, res) => {
   }
 };
 
-
 // ✅ Delete an event
 exports.deleteEvent = async (req, res) => {
   try {
@@ -102,11 +101,15 @@ exports.getAllEvents = async (req, res) => {
     let events;
 
     if (role === "Admin") {
-      events = await Event.find().select("-visibility").populate("createdBy", "name email");
+      events = await Event.find()
+        .select("-visibility")
+        .populate("createdBy", "name email");
     } else {
       events = await Event.find({
         visibility: { $in: [role] },
-      }).select("-visibility").populate("createdBy", "name email");
+      })
+        .select("-visibility")
+        .populate("createdBy", "name email");
     }
 
     res.json(events);
@@ -116,3 +119,32 @@ exports.getAllEvents = async (req, res) => {
   }
 };
 
+exports.getIdwiseEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.user;
+
+    let event;
+
+    if (role === "Admin") {
+      event = await Event.findById(id)
+        .populate("createdBy", "name email");
+    } else {
+      event = await Event.findOne({
+        _id: id,
+        visibility: { $in: [role] },
+      })
+        .select("-visibility")
+        .populate("createdBy", "name email");
+    }
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found or access denied" });
+    }
+
+    res.json(event);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server Error" });
+  }
+};
