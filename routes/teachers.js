@@ -9,6 +9,7 @@ const {
   getTimetable,
   addStudentTimetable,
   addTeacher,
+  getClassAttendance,
 } = require("../controllers/teacherController");
 const upload = require("../middleware/uploadMiddleware");
 
@@ -35,6 +36,7 @@ router.post("/add-student", authMiddleware, addStudentToClass);
 
 // Mark student attendance
 router.post("/mark-attendance", authMiddleware, markAttendance);
+router.get("/get-attendance/:classId", authMiddleware, getClassAttendance);
 
 // Schedule an exam
 router.post("/schedule-exam", authMiddleware, scheduleExam);
