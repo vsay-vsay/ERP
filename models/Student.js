@@ -58,6 +58,11 @@ const StudentSchema = new mongoose.Schema(
       type: Object,
       default: {},
     },
+    status:{
+      type:String,
+      enum:["active", "inactive"],
+      default:"active"
+    }
   },
   { timestamps: true }
 );

@@ -20,12 +20,13 @@ exports.getTeacherDashboard = async (req, res) => {
     });
     const timetable = await Timetable.find({ teacher: teacher._id });
     const exams = await Exam.find({ class: { $in: teacher.classesAssigned } });
+    const assignedClass= await Class.findOne({classTeacher:teacher._id})
 
     res.json({
-      teacher,
       totalStudents: students.length,
       timetable,
       exams,
+      assignedClass
     });
   } catch (error) {
     console.error("Error in Teacher Dashboard:", error);

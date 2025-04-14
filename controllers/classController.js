@@ -1,6 +1,8 @@
+const { default: mongoose } = require("mongoose");
 const Class = require("../models/Class");
 const Student = require("../models/Student");
 const User = require("../models/User");
+const Teacher = require("../models/Teacher");
 
 // ✅ Create a new class
 exports.createClass = async (req, res) => {
@@ -34,36 +36,72 @@ exports.createClass = async (req, res) => {
 // ✅ Update a class
 exports.updateClass = async (req, res) => {
   try {
-    const { name, section, description, classTeacher } = req.body;
     const classId = req.params.id;
+    const { name, section, description, classTeacher } = req.body;
 
+    // ✅ Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(classId)) {
+      return res.status(400).json({ error: "Invalid class ID" });
+    }
+
+    // ✅ Find existing class
     const existingClass = await Class.findById(classId);
-    if (!existingClass)
+    if (!existingClass) {
       return res.status(404).json({ error: "Class not found" });
+    }
 
-    // ✅ Ensure only the creator can update the class
+    // ✅ Ensure only the creator can update
     if (existingClass.createdBy.toString() !== req.user.id) {
       return res
         .status(403)
         .json({ error: "Unauthorized to update this class" });
     }
 
-    existingClass.name = name || existingClass.name;
-    existingClass.section = section || existingClass.section;
-    existingClass.description = description || existingClass.description;
-    existingClass.classTeacher = classTeacher || existingClass.classTeacher;
+    
+    if (classTeacher) {
+      const cleanedTeacherId = classTeacher.trim();
+
+      if (!mongoose.Types.ObjectId.isValid(cleanedTeacherId)) {
+        return res.status(400).json({ error: "Invalid teacher ID" });
+      }
+
+      const teacherExists = await Teacher.findById(cleanedTeacherId);
+      if (!teacherExists) {
+        return res.status(404).json({
+          error: `Teacher not found for ID: ${cleanedTeacherId}`,
+        });
+      }
+
+      existingClass.classTeacher = cleanedTeacherId;
+    }
+
+    // ✅ Update other fields if provided
+    if (name) existingClass.name = name;
+    if (section) existingClass.section = section;
+    if (description) existingClass.description = description;
 
     await existingClass.save();
-    res.json({ message: "Class updated successfully", class: existingClass });
+
+    // ✅ Return updated class with populated fields
+    const updatedClass = await Class.findById(classId)
+      .populate("createdBy", "name email")
+      .populate("students", "name email")
+      .populate("classTeacher", "name email subject");
+
+    res.json({
+      message: "Class updated successfully",
+      class: updatedClass,
+    });
   } catch (error) {
-    res.status(500).json({ error: "Server Error" });
+    console.error("Update Class Error:", error);
+    res.status(500).json({ error: "Server error. Please try again later." });
   }
 };
 
 // ✅ Get all classes
 exports.getAllClasses = async (req, res) => {
   try {
-    const classes = await Class.find().populate("createdBy", "name email");
+    const classes = await Class.find().populate("createdBy", "name email").populate("classTeacher", "name email");
     res.json(classes);
   } catch (error) {
     res.status(500).json({ error: "Server Error" });
