@@ -26,6 +26,12 @@ const StudentSchema = new mongoose.Schema(
     contact: {
       phone: String,
     },
+    attendance: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Attendance",
+      },
+    ],
     address: {
       street: String,
       city: String,

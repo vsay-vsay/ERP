@@ -31,6 +31,12 @@ const ClassSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  attendanceRecords: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Attendance",
+    },
+  ],
   status: {
     type: String,
     enum: ["active", "inactive"],

@@ -152,21 +152,94 @@ exports.addStudentToClass = async (req, res) => {
 //   }
 // };
 
+// exports.markAttendance = async (req, res) => {
+//   try {
+//     const { studentEmail, date, status, batchRecords } = req.body;
+
+//     // Handle batch operations
+//     if (batchRecords && Array.isArray(batchRecords)) {
+//       const results = [];
+
+//       for (const record of batchRecords) {
+//         try {
+//           const student = await Student.findOne({ email: record.studentEmail });
+//           if (!student) {
+//             results.push({
+//               error: `Student not found: ${record.studentEmail}`,
+//             });
+//             continue;
+//           }
+
+//           const attendance = new Attendance({
+//             student: student._id,
+//             date: record.date,
+//             status: record.status,
+//           });
+
+//           await attendance.save();
+//           results.push({ success: true, student: student.email });
+//         } catch (error) {
+//           results.push({
+//             error: `Failed for ${record.studentEmail}: ${error.message}`,
+//           });
+//         }
+//       }
+
+//       return res.json({
+//         message: "Batch attendance processed",
+//         results,
+//       });
+//     }
+
+//     // Handle single record (original functionality)
+//     const student = await Student.findOne({ email: studentEmail });
+//     if (!student) return res.status(404).json({ error: "Student not found" });
+
+//     const attendance = new Attendance({
+//       student: student._id,
+//       date,
+//       status,
+//     });
+
+//     await attendance.save();
+//     res.json({ message: "Attendance marked successfully" });
+//   } catch (error) {
+//     console.error("Attendance error:", error);
+//     res.status(500).json({
+//       error: "Server Error",
+//       details: error.message,
+//     });
+//   }
+// };
+
+
+
 exports.markAttendance = async (req, res) => {
   try {
-    const { studentEmail, date, status, batchRecords } = req.body;
+    const { studentEmail, date, status, batchRecords, classId, subject, markedBy } = req.body;
 
-    // Handle batch operations
-    if (batchRecords && Array.isArray(batchRecords)) {
+    // -----------------------------
+    // 🔁 Batch attendance handler
+    // -----------------------------
+    if (Array.isArray(batchRecords)) {
       const results = [];
 
       for (const record of batchRecords) {
         try {
           const student = await Student.findOne({ email: record.studentEmail });
+
           if (!student) {
-            results.push({
-              error: `Student not found: ${record.studentEmail}`,
-            });
+            results.push({ error: `Student not found: ${record.studentEmail}` });
+            continue;
+          }
+
+          const existing = await Attendance.findOne({
+            student: student._id,
+            date: record.date,
+          });
+
+          if (existing) {
+            results.push({ warning: `Already marked: ${record.studentEmail}` });
             continue;
           }
 
@@ -174,31 +247,47 @@ exports.markAttendance = async (req, res) => {
             student: student._id,
             date: record.date,
             status: record.status,
+            classId: student.classId,
+            subject: record.subject || subject,
+            markedBy: markedBy || req.user?._id, // assuming middleware sets req.user
+            type: "student",
           });
 
           await attendance.save();
           results.push({ success: true, student: student.email });
-        } catch (error) {
+        } catch (err) {
           results.push({
-            error: `Failed for ${record.studentEmail}: ${error.message}`,
+            error: `Failed for ${record.studentEmail}: ${err.message}`,
           });
         }
       }
 
-      return res.json({
-        message: "Batch attendance processed",
-        results,
-      });
+      return res.json({ message: "Batch attendance processed", results });
     }
 
-    // Handle single record (original functionality)
+    // -----------------------------
+    // 🧍‍♂️ Single student handler
+    // -----------------------------
     const student = await Student.findOne({ email: studentEmail });
     if (!student) return res.status(404).json({ error: "Student not found" });
+
+    const alreadyExists = await Attendance.findOne({
+      student: student._id,
+      date,
+    });
+
+    if (alreadyExists) {
+      return res.status(409).json({ message: "Attendance already marked" });
+    }
 
     const attendance = new Attendance({
       student: student._id,
       date,
       status,
+      classId: student.classId,
+      subject,
+      markedBy: markedBy || req.user?._id,
+      type: "student",
     });
 
     await attendance.save();
@@ -234,19 +323,26 @@ exports.markAttendance = async (req, res) => {
 //   }
 // };
 
+
 exports.getClassAttendance = async (req, res) => {
   try {
-    const { studentIds } = req.query;
+    const { studentIds, classId, date } = req.query;
 
-    const filter = {};
+    const filter = { type: "student" };
 
-    // If filtered student IDs are provided, filter by them
     if (studentIds) {
       const idsArray = Array.isArray(studentIds)
         ? studentIds
-        : studentIds.split(","); // in case they come as comma-separated string
-
+        : studentIds.split(",");
       filter.student = { $in: idsArray };
+    }
+
+    if (classId) {
+      filter.classId = classId;
+    }
+
+    if (date) {
+      filter.date = new Date(date); // Optionally adjust for timezone
     }
 
     const attendance = await Attendance.find(filter)
@@ -255,6 +351,7 @@ exports.getClassAttendance = async (req, res) => {
 
     res.json({
       success: true,
+      total: attendance.length,
       data: attendance,
     });
   } catch (error) {
@@ -262,6 +359,34 @@ exports.getClassAttendance = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+// exports.getClassAttendance = async (req, res) => {
+//   try {
+//     const { studentIds } = req.query;
+
+//     const filter = {};
+
+//     // If filtered student IDs are provided, filter by them
+//     if (studentIds) {
+//       const idsArray = Array.isArray(studentIds)
+//         ? studentIds
+//         : studentIds.split(","); // in case they come as comma-separated string
+
+//       filter.student = { $in: idsArray };
+//     }
+
+//     const attendance = await Attendance.find(filter)
+//       .populate("student", "name email")
+//       .sort({ date: -1 });
+
+//     res.json({
+//       success: true,
+//       data: attendance,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching attendance:", error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // Schedule an exam
 exports.scheduleExam = async (req, res) => {
