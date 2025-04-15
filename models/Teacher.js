@@ -50,7 +50,7 @@ const TeacherSchema = new mongoose.Schema(
       type: String,
       default: "Assistant Professor",
     },
-    qualification: {
+    qualifications: {
       type: String,
     },
     experienceYears: {
@@ -94,7 +94,7 @@ const TeacherSchema = new mongoose.Schema(
         date: Date,
       },
     ],
-    biography: {
+    bio: {
       type: String,
       default: "Hi",
     },
