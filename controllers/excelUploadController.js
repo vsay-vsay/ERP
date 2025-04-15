@@ -271,9 +271,18 @@ exports.bulkAddExamsFromExcel = async (req, res) => {
     const skipped = [];
 
     for (const [index, entry] of data.entries()) {
-      const { title, subject, date, duration, className } = entry;
+      const { title, subject, date, duration, classId, time, totalMarks } =
+        entry;
 
-      if (!title || !subject || !date || !duration || !className) {
+      if (
+        !title ||
+        !subject ||
+        !date ||
+        !duration ||
+        !classId ||
+        !totalMarks ||
+        !time
+      ) {
         skipped.push({ row: index + 2, reason: "Missing required fields" }); // Excel row number
         continue;
       }
@@ -284,10 +293,12 @@ exports.bulkAddExamsFromExcel = async (req, res) => {
           subject: subject.trim(),
           date: new Date(date), // Parse properly
           duration: Number(duration),
-          class: className.trim(),
+          // class: className.trim(),
+          class: classId,
+          time,
+          totalMarks,
           createdBy: req.user.id || null, // Ensure req.user exists
         });
-
         await exam.save();
         added.push(exam);
       } catch (err) {

@@ -10,13 +10,16 @@ exports.createExam = async (req, res) => {
   }
 
   try {
-    const { title, subject, date, duration, className } = req.body;
+    const { title, subject, date, duration, classId, time, totalMarks } =
+      req.body;
     const exam = new Exam({
       title,
       subject,
       date,
       duration,
-      class: className,
+      time,
+      totalMarks,
+      class: classId,
       createdBy: req.user.id,
     });
 
@@ -39,7 +42,7 @@ exports.updateExam = async (req, res) => {
     if (!exam) return res.status(404).json({ error: "Exam not found" });
 
     // Optional: Restrict teacher to only update their own exams
-    if (req.user.role === "teacher" && !exam.createdBy.equals(req.user._id)) {
+    if (req.user.role === "Teacher" && !exam.createdBy.equals(req.user._id)) {
       return res
         .status(403)
         .json({ error: "Teachers can only update their own exams." });

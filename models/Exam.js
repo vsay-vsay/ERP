@@ -14,10 +14,13 @@ const examSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    totalMarks: { type: Number, required: true },
     class: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Class",
       required: true,
     },
+    time: { type: String, required: true },
     duration: {
       type: Number, // in minutes
       required: true,

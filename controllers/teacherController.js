@@ -266,9 +266,10 @@ exports.getClassAttendance = async (req, res) => {
 // Schedule an exam
 exports.scheduleExam = async (req, res) => {
   try {
-    const { className, examName, examDate } = req.body;
-    const exam = new Exam({ className, examName, examDate });
-    await exam.save();
+    const { classId, title, date, subject, totalMarks, duration, time } = req.body;
+
+    const examdata = new Exam({ title, class: classId, date, subject, totalMarks, duration, time, createdBy:req.user.id });
+    await examdata.save();
     res.json({ message: "Exam scheduled successfully" });
   } catch (error) {
     res.status(500).json({ error: "Server Error" });

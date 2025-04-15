@@ -20,6 +20,11 @@ const UserSchema = new mongoose.Schema({
     enum: ["SuperAdmin", "Admin", "Teacher", "Student", "Accountant"], 
     required: true 
   },
+  status:{
+    type:String,
+    enum:["active", "inactive"],
+    default:"active"
+  },
   domainName: { type: String, required: function() { return this.role !== "SuperAdmin"; } } // Required except for SuperAdmin
 });
 

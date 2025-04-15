@@ -11,11 +11,13 @@ exports.getAllUsers = async (req, res) => {
 
     const users = await User.find({
       domainName: domain,
-      _id: { $ne: req.user.id } // Exclude current user
+      _id: { $ne: req.user.id }, // Exclude current user
     }).select("-password");
-    
+
     if (users.length === 0) {
-      return res.status(404).json({ message: "No users found for this domain" });
+      return res
+        .status(404)
+        .json({ message: "No users found for this domain" });
     }
 
     res.json(users);
@@ -23,8 +25,6 @@ exports.getAllUsers = async (req, res) => {
     res.status(500).json({ error: "Server Error" });
   }
 };
-
-
 
 // Get a single user by ID
 exports.getUserById = async (req, res) => {
@@ -40,8 +40,12 @@ exports.getUserById = async (req, res) => {
 // Update user
 exports.updateUser = async (req, res) => {
   try {
-    const { name, email, role } = req.body;
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, { name, email, role }, { new: true });
+    const { name, email, role, status } = req.body;
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { name, email, role, status },
+      { new: true }
+    );
     if (!updatedUser) return res.status(404).json({ error: "User not found" });
     res.json(updatedUser);
   } catch (error) {
