@@ -3,11 +3,15 @@ const Class = require("./Class");
 
 const StudentSchema = new mongoose.Schema(
   {
-    rollNo: {
+    studentId: {
       type: String,
       unique: true,
-      index: true,
     },
+    // rollNo: {
+    //   type: String,
+    //   unique: true,
+    //   index: true,
+    // },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -58,41 +62,41 @@ const StudentSchema = new mongoose.Schema(
       type: Object,
       default: {},
     },
-    status:{
-      type:String,
-      enum:["active", "inactive"],
-      default:"active"
-    }
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
   },
   { timestamps: true }
 );
 
 // ✅ Fixed auto-generate rollNo before saving
-StudentSchema.pre("save", async function (next) {
-  if (this.rollNo || !this.classId) return next();
+// StudentSchema.pre("save", async function (next) {
+//   if (this.rollNo || !this.classId) return next();
 
-  try {
-    const classDoc = await Class.findById(this.classId);
-    if (!classDoc) return next(new Error("Invalid classId"));
+//   try {
+//     const classDoc = await Class.findById(this.classId);
+//     if (!classDoc) return next(new Error("Invalid classId"));
 
-    const classPrefix = classDoc.name.replace(/\s+/g, "").toUpperCase();
-    const year = new Date().getFullYear();
+//     const classPrefix = classDoc.name.replace(/\s+/g, "").toUpperCase();
+//     const year = new Date().getFullYear();
 
-    const count = await this.constructor.countDocuments({
-      classId: this.classId,
-      admissionDate: {
-        $gte: new Date(`${year}-01-01`),
-        $lte: new Date(`${year}-12-31`),
-      },
-    });
+//     const count = await this.constructor.countDocuments({
+//       classId: this.classId,
+//       admissionDate: {
+//         $gte: new Date(`${year}-01-01`),
+//         $lte: new Date(`${year}-12-31`),
+//       },
+//     });
 
-    const serial = String(count + 1).padStart(3, "0");
-    this.rollNo = `${classPrefix}${year}${serial}`;
+//     const serial = String(count + 1).padStart(3, "0");
+//     this.rollNo = `${classPrefix}${year}${serial}`;
 
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
+//     next();
+//   } catch (err) {
+//     next(err);
+//   }
+// });
 
 module.exports = mongoose.model("Student", StudentSchema);
