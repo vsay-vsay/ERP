@@ -10,6 +10,7 @@ const {
   addStudentTimetable,
   addTeacher,
   getClassAttendance,
+  updateTeacher,
 } = require("../controllers/teacherController");
 const upload = require("../middleware/uploadMiddleware");
 
@@ -22,6 +23,7 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 const router = express.Router();
 
 router.post("/add", authMiddleware, roleMiddleware("Admin"), addTeacher);
+router.post("/:id", authMiddleware, roleMiddleware("Admin"), updateTeacher);
 
 // Get all teachers
 router.get("/all", authMiddleware, getAllTeachers);

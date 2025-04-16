@@ -97,7 +97,32 @@ exports.getTeacherById = async (req, res) => {
     res.status(500).json({ error: "Server Error" });
   }
 };
+// Update teacher details
+exports.updateTeacher = async (req, res) => {
+  try {
+    const { id } = req.params; // Teacher ID from the request parameters
+    const updateData = req.body; // Data to update from the request body
 
+    // Find the teacher by ID and update their details
+    const updatedTeacher = await Teacher.findByIdAndUpdate(
+       id,
+      updateData,
+      { new: true, runValidators: true } // Return the updated document and validate the data
+    );
+
+    if (!updatedTeacher) {
+      return res.status(404).json({ error: "Teacher not found" });
+    }
+
+    res.json({
+      message: "Teacher updated successfully",
+      teacher: updatedTeacher,
+    });
+  } catch (error) {
+    console.error("Update Teacher Error:", error);
+    res.status(500).json({ error: "Server Error" });
+  }
+};
 // Add a student to a class
 exports.addStudentToClass = async (req, res) => {
   try {
@@ -212,11 +237,17 @@ exports.addStudentToClass = async (req, res) => {
 //   }
 // };
 
-
-
 exports.markAttendance = async (req, res) => {
   try {
-    const { studentEmail, date, status, batchRecords, classId, subject, markedBy } = req.body;
+    const {
+      studentEmail,
+      date,
+      status,
+      batchRecords,
+      classId,
+      subject,
+      markedBy,
+    } = req.body;
 
     // -----------------------------
     // 🔁 Batch attendance handler
@@ -229,7 +260,9 @@ exports.markAttendance = async (req, res) => {
           const student = await Student.findOne({ email: record.studentEmail });
 
           if (!student) {
-            results.push({ error: `Student not found: ${record.studentEmail}` });
+            results.push({
+              error: `Student not found: ${record.studentEmail}`,
+            });
             continue;
           }
 
@@ -323,7 +356,6 @@ exports.markAttendance = async (req, res) => {
 //   }
 // };
 
-
 exports.getClassAttendance = async (req, res) => {
   try {
     const { studentIds, classId, date } = req.query;
@@ -391,9 +423,19 @@ exports.getClassAttendance = async (req, res) => {
 // Schedule an exam
 exports.scheduleExam = async (req, res) => {
   try {
-    const { classId, title, date, subject, totalMarks, duration, time } = req.body;
+    const { classId, title, date, subject, totalMarks, duration, time } =
+      req.body;
 
-    const examdata = new Exam({ title, class: classId, date, subject, totalMarks, duration, time, createdBy:req.user.id });
+    const examdata = new Exam({
+      title,
+      class: classId,
+      date,
+      subject,
+      totalMarks,
+      duration,
+      time,
+      createdBy: req.user.id,
+    });
     await examdata.save();
     res.json({ message: "Exam scheduled successfully" });
   } catch (error) {
